@@ -1,13 +1,13 @@
 import express, { Request, Response } from "express";
 import { z } from "zod";
-import { UserModel } from "./middleware";
+import { UserModel } from "./db";
 import bcrypt from "bcrypt"
 
 const app = express();
 app.use(express.json());
 
 const userLoginSchema = z.object({
-  username: z.string().email(),
+  username: z.string().email().max(50),
   password: z.string().min(6),
 });
 
