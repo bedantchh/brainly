@@ -14,12 +14,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const zod_1 = require("zod");
-const middleware_1 = require("./middleware");
+const db_1 = require("./db");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const db_2 = require("./db");
+(0, db_2.connect)();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
+const Secret = process.env.JWT_SECRET;
 const userLoginSchema = zod_1.z.object({
-    username: zod_1.z.string().email(),
+    username: zod_1.z.string().email().max(50),
     password: zod_1.z.string().min(6),
 });
 app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -33,9 +39,9 @@ app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
     const { username, password } = user.data;
     const hashedPassword = yield bcrypt_1.default.hash(password, 4);
     try {
-        const newUser = yield middleware_1.UserModel.create({
+        const newUser = yield db_1.UserModel.create({
             username,
-            password: hashedPassword
+            password: hashedPassword,
         });
         return res.status(200).json({
             message: `welcome ${username}`,
@@ -44,11 +50,47 @@ app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
     catch (err) {
         console.error("signup error:", err);
         return res.status(500).json({
-            message: "Internal server error."
+            message: "Internal server error.",
         });
     }
 }));
-app.post("/api/v1/signin", (req, res) => { });
+app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const user = userLoginSchema.safeParse(req.body);
+        if (!user.success) {
+            return res.status(400).json({
+                message: "Invalid Inputs",
+            });
+        }
+        const { username, password } = user.data;
+        const existingUser = yield db_1.UserModel.findOne({
+            username,
+        });
+        if (!existingUser) {
+            return res.status(404).json({
+                message: "User not found",
+            });
+        }
+        else {
+            const pwMatch = yield bcrypt_1.default.compare(password, existingUser.password);
+            const token = jsonwebtoken_1.default.sign({
+                id: existingUser._id,
+            }, Secret);
+            if (!pwMatch) {
+                return res.status(401).json({
+                    message: "Invalid credentials",
+                });
+            }
+            res.json({ token: token });
+        }
+    }
+    catch (err) {
+        console.error("signin error:", err);
+        return res.status(500).json({
+            message: "Internal server error.",
+        });
+    }
+}));
 app.post("/api/v1/content", (req, res) => { });
 app.get("/api/v1/content", (req, res) => { });
 app.delete("/api/v1/delete", (req, res) => { });
