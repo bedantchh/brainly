@@ -20,6 +20,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const db_2 = require("./db");
+const middleware_1 = require("./middleware");
 (0, db_2.connect)();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
@@ -91,7 +92,59 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
         });
     }
 }));
-app.post("/api/v1/content", (req, res) => { });
-app.get("/api/v1/content", (req, res) => { });
-app.delete("/api/v1/delete", (req, res) => { });
+app.post("/api/v1/content", middleware_1.userMIddleWare, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const link = req.body.link;
+        const title = req.body.title;
+        // const tags = req.body.tags;
+        const userId = req.userId;
+        yield db_1.ContentModel.create({
+            link,
+            title,
+            userId,
+            tags: [],
+        });
+        res.status(200).json({
+            message: "Content added succesfully",
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            message: "Internal sever error",
+        });
+    }
+}));
+app.get("/api/v1/content", middleware_1.userMIddleWare, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = req.userId;
+        const content = yield db_1.ContentModel.findOne({
+            userId,
+        }).populate("userId", "username");
+        if (!content) {
+            res.status(401).json({
+                message: "no content found",
+            });
+        }
+        res.status(200).json({ content });
+    }
+    catch (error) {
+        res.status(500).json({
+            message: "server error",
+        });
+    }
+}));
+app.delete("/api/v1/delete", middleware_1.userMIddleWare, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const contentId = req.body.contentId;
+        yield db_1.ContentModel.findOneAndDelete({
+            contentId,
+            userId: req.userId,
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            message: "Server error",
+        });
+    }
+}));
 app.listen(3000);

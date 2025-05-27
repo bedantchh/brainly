@@ -1,11 +1,12 @@
-import express, { Request, Response } from "express";
+import express, { json, Request, Response } from "express";
 import { z } from "zod";
-import { UserModel } from "./db";
+import { ContentModel, UserModel } from "./db";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 dotenv.config();
 import jwt from "jsonwebtoken";
 import { connect } from "./db";
+import { userMIddleWare } from "./middleware";
 connect();
 
 const app = express();
@@ -67,7 +68,7 @@ app.post("/api/v1/signin", async (req: any, res: any) => {
         },
         Secret
       );
-      if(!pwMatch) {
+      if (!pwMatch) {
         return res.status(401).json({
           message: "Invalid credentials",
         });
@@ -81,8 +82,58 @@ app.post("/api/v1/signin", async (req: any, res: any) => {
     });
   }
 });
-app.post("/api/v1/content", (req, res) => {});
-app.get("/api/v1/content", (req, res) => {});
-app.delete("/api/v1/delete", (req, res) => {});
+app.post("/api/v1/content", userMIddleWare, async (req: Request, res) => {
+  try {
+    const link = req.body.link;
+    const title = req.body.title;
+    // const tags = req.body.tags;
+    const userId = req.userId;
+    await ContentModel.create({
+      link,
+      title,
+      userId,
+      tags: [],
+    });
+
+    res.status(200).json({
+      message: "Content added succesfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal sever error",
+    });
+  }
+});
+app.get("/api/v1/content", userMIddleWare, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const content = await ContentModel.findOne({
+      userId,
+    }).populate("userId", "username");
+    if (!content) {
+      res.status(401).json({
+        message: "no content found",
+      });
+    }
+    res.status(200).json({ content });
+  } catch (error) {
+    res.status(500).json({
+      message: "server error",
+    });
+  }
+});
+app.delete("/api/v1/delete", userMIddleWare, async (req, res) => {
+  try {
+    const contentId = req.body.contentId;
+    await ContentModel.findOneAndDelete({
+      contentId,
+      userId: req.userId,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+    });
+  }
+});
 
 app.listen(3000);
