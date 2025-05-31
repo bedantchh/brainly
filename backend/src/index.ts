@@ -1,12 +1,13 @@
 import express, { json, Request, Response } from "express";
 import { z } from "zod";
-import { ContentModel, UserModel } from "./db";
+import { ContentModel, LinkModel, UserModel } from "./db";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 dotenv.config();
 import jwt from "jsonwebtoken";
 import { connect } from "./db";
 import { userMIddleWare } from "./middleware";
+import { random } from "./utils";
 connect();
 
 const app = express();
@@ -133,6 +134,35 @@ app.delete("/api/v1/delete", userMIddleWare, async (req, res) => {
     res.status(500).json({
       message: "Server error",
     });
+  }
+});
+
+app.post("/api/v1/share", userMIddleWare, async (req, res) => {
+  try {
+    const share = req.body.share;
+    if (share) {
+      let hash = random(8);
+      await LinkModel.create({
+        userId: req.userId,
+        hash
+      });
+      res.status(201).json({
+        message: "Sharing is enabled",
+        hash: hash
+      })
+    } else {
+      await LinkModel.deleteOne({
+        userId: req.userId,
+      });
+      res.status(201).json({
+        message: "sharing is disabled"
+      })
+    }
+    
+  } catch(err) {
+    res.status(500).json({
+      message: "Internal server error"
+    })
   }
 });
 
