@@ -21,6 +21,7 @@ dotenv_1.default.config();
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const db_2 = require("./db");
 const middleware_1 = require("./middleware");
+const utils_1 = require("./utils");
 (0, db_2.connect)();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
@@ -144,6 +145,71 @@ app.delete("/api/v1/delete", middleware_1.userMIddleWare, (req, res) => __awaite
     catch (error) {
         res.status(500).json({
             message: "Server error",
+        });
+    }
+}));
+app.post("/api/v1/share", middleware_1.userMIddleWare, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const share = req.body.share;
+        if (share) {
+            let hash = (0, utils_1.random)(8);
+            yield db_1.LinkModel.create({
+                userId: req.userId,
+                hash,
+            });
+            res.status(201).json({
+                message: "Sharing is enabled",
+                hash: hash,
+            });
+        }
+        else {
+            yield db_1.LinkModel.deleteOne({
+                userId: req.userId,
+            });
+            res.status(201).json({
+                message: "sharing is disabled",
+            });
+        }
+    }
+    catch (err) {
+        res.status(500).json({
+            message: "Internal server error",
+        });
+    }
+}));
+app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const hash = req.params.shareLink;
+        const link = yield db_1.LinkModel.findOne({
+            hash,
+        });
+        if (!link) {
+            res.status(411).json({
+                message: "Link not found"
+            });
+            return;
+        }
+        //userID
+        const content = yield db_1.ContentModel.find({
+            userId: link.userId
+        });
+        const user = yield db_1.UserModel.findOne({
+            _id: link.userId
+        });
+        if (!user) {
+            res.status(411).json({
+                message: "user not found"
+            });
+            return;
+        }
+        res.status(200).json({
+            username: user.username,
+            content: content
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            message: "server error"
         });
     }
 }));

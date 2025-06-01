@@ -144,24 +144,59 @@ app.post("/api/v1/share", userMIddleWare, async (req, res) => {
       let hash = random(8);
       await LinkModel.create({
         userId: req.userId,
-        hash
+        hash,
       });
       res.status(201).json({
         message: "Sharing is enabled",
-        hash: hash
-      })
+        hash: hash,
+      });
     } else {
       await LinkModel.deleteOne({
         userId: req.userId,
       });
       res.status(201).json({
-        message: "sharing is disabled"
-      })
+        message: "sharing is disabled",
+      });
     }
-    
-  } catch(err) {
+  } catch (err) {
     res.status(500).json({
-      message: "Internal server error"
+      message: "Internal server error",
+    });
+  }
+});
+
+app.get("/api/v1/brain/:shareLink", async (req, res) => {
+  try {
+    const hash = req.params.shareLink;
+    const link = await LinkModel.findOne({
+      hash,
+    });
+    if(!link){
+      res.status(411).json({
+        message: "Link not found"
+      })
+      return
+    }
+    //userID
+    const content = await ContentModel.find({
+      userId: link.userId
+    })
+    const user = await UserModel.findOne({
+      _id: link.userId
+    })
+    if(!user){
+      res.status(411).json({
+        message: "user not found"
+      })
+      return
+    }
+    res.status(200).json({
+      username: user.username,
+      content: content
+    })
+  } catch (error) {
+    res.status(500).json({
+      message: "server error"
     })
   }
 });

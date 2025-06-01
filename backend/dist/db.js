@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ContentModel = exports.UserModel = exports.connect = void 0;
+exports.LinkModel = exports.ContentModel = exports.UserModel = exports.connect = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
@@ -73,5 +73,10 @@ const contentSchema = new mongoose_1.Schema({
     tags: [{ type: mongoose_1.default.Types.ObjectId, ref: 'Tag' }],
     userId: { type: mongoose_1.default.Types.ObjectId, ref: 'User', required: true }
 });
+const linkSchema = new mongoose_1.Schema({
+    "hash": String,
+    userId: { type: mongoose_1.default.Types.ObjectId, ref: 'User', reuired: true, unique: true }
+});
 exports.UserModel = (0, mongoose_1.model)("User", userSchema);
 exports.ContentModel = (0, mongoose_1.model)("Content", contentSchema);
+exports.LinkModel = (0, mongoose_1.model)("Link", linkSchema);
