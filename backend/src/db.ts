@@ -30,7 +30,7 @@ const contentSchema = new Schema({
 
 const linkSchema = new Schema({
     "hash": String,
-    userId: {type: mongoose.Types.ObjectId, ref: 'User', reuired: true, unique: true}
+    userId: {type: mongoose.Types.ObjectId, ref: 'User', required: true, unique: true}
 })
 
 
