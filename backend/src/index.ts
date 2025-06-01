@@ -141,6 +141,15 @@ app.post("/api/v1/share", userMIddleWare, async (req, res) => {
   try {
     const share = req.body.share;
     if (share) {
+      const existingLink = await LinkModel.findOne({
+        userId: req.userId
+      })
+      if(existingLink){
+        res.status(200).json({
+          hash: existingLink.hash
+        });
+        return;
+      }
       let hash = random(8);
       await LinkModel.create({
         userId: req.userId,
