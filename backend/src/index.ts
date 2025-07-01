@@ -8,10 +8,12 @@ import jwt from "jsonwebtoken";
 import { connect } from "./db";
 import { userMIddleWare } from "./middleware";
 import { random } from "./utils";
+import cors from "cors";
 connect();
 
 const app = express();
 app.use(express.json());
+app.use(cors())
 const Secret = process.env.JWT_SECRET as string;
 
 const userLoginSchema = z.object({
