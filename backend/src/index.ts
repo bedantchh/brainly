@@ -129,10 +129,18 @@ app.get("/api/v1/content", userMIddleWare, async (req, res) => {
 });
 app.delete("/api/v1/delete", userMIddleWare, async (req, res) => {
   try {
-    const contentId = req.body.contentId;
-    await ContentModel.findOneAndDelete({
-      contentId,
+    const _id = req.body.contentId;
+    const deletedContent = await ContentModel.findOneAndDelete({
+      _id,
       userId: req.userId,
+    });
+    if (!deletedContent) {
+      res.status(404).json({
+      message: "Content not found"
+      });
+    }
+    res.status(200).json({
+      message: "content deleted"
     });
   } catch (error) {
     res.status(500).json({
