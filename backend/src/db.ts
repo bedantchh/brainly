@@ -21,6 +21,7 @@ const userSchema =  new Schema({
 })
 
 const contentSchema = new Schema({
+    "userTitle": String,
     "title" : String,
     "link": String,
     "type": String,

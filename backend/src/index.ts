@@ -9,11 +9,14 @@ import { connect } from "./db";
 import { userMIddleWare } from "./middleware";
 import { random } from "./utils";
 import cors from "cors";
+import { JSDOM } from "jsdom";
+import axios from "axios";
+
 connect();
 
 const app = express();
 app.use(express.json());
-app.use(cors())
+app.use(cors());
 const Secret = process.env.JWT_SECRET as string;
 
 const userLoginSchema = z.object({
@@ -88,11 +91,31 @@ app.post("/api/v1/signin", async (req: any, res: any) => {
 app.post("/api/v1/content", userMIddleWare, async (req: Request, res) => {
   try {
     const link = req.body.link;
-    const title = req.body.title;
+    const userTitle = req.body.title;
     const type = req.body.type;
     // const tags = req.body.tags;
     const userId = req.userId;
+    let title = "";
+    try {
+      const response = await axios.get(link, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/91.0.4472.124 Safari/537.36",
+          "Accept-Language": "en-US,en;q=0.9",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          Referer: link,
+        },
+      });
+      const dom = new JSDOM(response.data);
+      title = dom.window.document.querySelector("title")?.textContent || userTitle;
+    } catch (error) {
+      res.status(500).json({ message: "could not parse" });
+      return;
+    }
+
     await ContentModel.create({
+      userTitle,
       link,
       title,
       type,
@@ -136,11 +159,11 @@ app.delete("/api/v1/delete", userMIddleWare, async (req, res) => {
     });
     if (!deletedContent) {
       res.status(404).json({
-      message: "Content not found"
+        message: "Content not found",
       });
     }
     res.status(200).json({
-      message: "content deleted"
+      message: "content deleted",
     });
   } catch (error) {
     res.status(500).json({
@@ -154,11 +177,11 @@ app.post("/api/v1/share", userMIddleWare, async (req, res) => {
     const share = req.body.share;
     if (share) {
       const existingLink = await LinkModel.findOne({
-        userId: req.userId
-      })
-      if(existingLink){
+        userId: req.userId,
+      });
+      if (existingLink) {
         res.status(200).json({
-          hash: existingLink.hash
+          hash: existingLink.hash,
         });
         return;
       }
@@ -192,33 +215,33 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
     const link = await LinkModel.findOne({
       hash,
     });
-    if(!link){
+    if (!link) {
       res.status(411).json({
-        message: "Link not found"
-      })
-      return
+        message: "Link not found",
+      });
+      return;
     }
     //userID
     const content = await ContentModel.find({
-      userId: link.userId
-    })
+      userId: link.userId,
+    });
     const user = await UserModel.findOne({
-      _id: link.userId
-    })
-    if(!user){
+      _id: link.userId,
+    });
+    if (!user) {
       res.status(411).json({
-        message: "user not found"
-      })
-      return
+        message: "user not found",
+      });
+      return;
     }
     res.status(200).json({
       username: user.username,
-      content: content
-    })
+      content: content,
+    });
   } catch (error) {
     res.status(500).json({
-      message: "server error"
-    })
+      message: "server error",
+    });
   }
 });
 
